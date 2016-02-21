@@ -6,3 +6,15 @@ of Quality Assurance (QA) dashboards.
 
 The sample project is OpenTravelData (OPTD): http://github.com/opentraveldata/opentraveldata
 
+## Samples - OpenTravelData
+### Airlines - Airport Bases / Hubs
+Check, for every airline of the [optd_airlines.csv file](http://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_airlines.csv),
+that the airport bases/hubs are appearing in the [optd_airline_por.csv file](http://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_airline_por.csv).
+
+The following script displays all the missing airport bases/hubs:
+'''bash
+cd sample/opentraveldata
+./check-airline-bases.py
+'''
+If the script does not return anything, then the check (successfully) passes.
+
