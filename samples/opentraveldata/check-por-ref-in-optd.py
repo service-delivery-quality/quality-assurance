@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import urllib.request, shutil, csv, datetime, getopt, sys, os
+import urllib.request, shutil, csv, datetime, re, getopt, sys, os
 
 # Usage
 def usage (script_name):
@@ -119,6 +119,8 @@ if __name__ == '__main__':
     file_reader = csv.DictReader (csvfile, delimiter='^')
     for row in file_reader:
       optd_por_code = row['iata_code']
+      optd_loc_type = row['location_type']
+      optd_geo_id = row['geoname_id']
       optd_env_id = row['envelope_id']
       optd_coord_lat = row['latitude']
       optd_coord_lon = row['longitude']
@@ -130,7 +132,9 @@ if __name__ == '__main__':
       # Check whether the OPTD POR is in the list of reference POR
       if not optd_por_code in ref_por_dict and not optd_env_id:
         # The OPTD POR cannot be found in the list of reference POR
-        reportStruct = {'por_code': optd_por_code, 'in_optd': 1, 'in_ref': 0}
+        reportStruct = {'por_code': optd_por_code, 'geonames_id': optd_geo_id,
+                        'location_type': optd_loc_type,
+                        'in_optd': 1, 'in_ref': 0}
         print (str(reportStruct))
 
       else:
@@ -150,9 +154,15 @@ if __name__ == '__main__':
           # Check whether the city of the reference POR appears in the city list
           # of the OPTD-maintained POR 
           if city_code_list:
-            if not ref_por_city_code in city_code_list:
-              reportStruct = {'por_code': optd_por_code, 'in_optd': 1,
-                              'in_ref': 1, 'ref_por_code': ref_por_city_code,
+            # Derive whether that POR is a city
+            is_city = re.search ("C", optd_loc_type)
+
+            if not is_city and not ref_por_city_code in city_code_list:
+              reportStruct = {'por_code': optd_por_code,
+                              'location_type': optd_loc_type,
+                              'geonames_id': optd_geo_id,
+                              'in_optd': 1, 'in_ref': 1,
+                              'ref_por_code': ref_por_city_code,
                               'optd_city_code_list': city_code_list}
               print (str(reportStruct))
 

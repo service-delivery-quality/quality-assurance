@@ -103,6 +103,8 @@ if __name__ == '__main__':
     file_reader = csv.DictReader (csvfile, delimiter='^')
     for row in file_reader:
       por_code = row['iata_code']
+      optd_loc_type = row['location_type']
+      optd_geo_id = row['geoname_id']
       optd_env_id = row['envelope_id']
       optd_coord_lat = row['latitude']
       optd_coord_lon = row['longitude']
