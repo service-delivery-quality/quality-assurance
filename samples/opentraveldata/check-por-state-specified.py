@@ -8,7 +8,8 @@ def usage (script_name):
   print ("Usage: %s [options]" % script_name)
   print ("")
   print ("That script downloads OpenTravelData (OPTD) POR-related CSV files")
-  print ("and check that the OPTD POR are present in the reference POR file")
+  print ("and check that the state is specified for all the OPTD POR")
+  print ("in a few selected countries")
   print ("")
   print ("Options:")
   print ("  -h, --help      : outputs this help and exits")
@@ -84,61 +85,56 @@ if __name__ == '__main__':
   optd_por_public_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_public.csv?raw=true'
   optd_por_public_file = 'to_be_checked/optd_por_public.csv'
 
-  # POR reference data
-  optd_por_ref_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_ref.csv?raw=true'
-  optd_por_ref_file = 'to_be_checked/optd_por_ref.csv'
+  # OPTD-maintained list of country states
+  optd_country_states_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_country_states.csv?raw=true'
+  optd_country_states_file = 'to_be_checked/optd_country_states.csv'
+  
 
   # If the files are not present, or are too old, download them
   downloadFileIfNeeded (optd_por_public_url, optd_por_public_file, verboseFlag)
-  downloadFileIfNeeded (optd_por_ref_url, optd_por_ref_file, verboseFlag)
+  downloadFileIfNeeded (optd_country_states_url, optd_country_states_file,
+                        verboseFlag)
 
   # DEBUG
   if verboseFlag:
     displayFileHead (optd_por_public_file)
-    displayFileHead (optd_por_ref_file)
+    displayFileHead (optd_country_states_file)
+
+
+  # List of countries for which a state should be specified
+  optd_states_dict = dict()
+  with open (optd_country_states_file, newline='') as csvfile:
+    file_reader = csv.DictReader (csvfile, delimiter='^')
+    for row in file_reader:
+      ctry_code = row['ctry_code']
+      adm1_code = row['adm1_code']
+      state_code = row['abbr']
+      if not ctry_code in optd_states_dict:
+        optd_states_dict[ctry_code] = (adm1_code, state_code)
 
   #
-  optd_por_dict = dict()
   with open (optd_por_public_file, newline='') as csvfile:
     file_reader = csv.DictReader (csvfile, delimiter='^')
     for row in file_reader:
       por_code = row['iata_code']
-      optd_env_id = row['envelope_id']
-      optd_coord_lat = row['latitude']
-      optd_coord_lon = row['longitude']
-      optd_page_rank = row['page_rank']
-      optd_ctry_code = row['country_code']
-      optd_adm1_code = row['adm1_code']
-      city_code_list_str = row['city_code_list']
+      geo_id = row['geoname_id']
+      ctry_code = row['country_code']
+      adm1_code = row['adm1_code']
+      state_code = row['state_code']
 
-      #
-      if not por_code in optd_por_dict:
-        # Register the OPTD details for the POR
-        optd_por_dict[por_code] = (por_code, city_code_list_str, optd_ctry_code,
-                                   optd_page_rank, optd_adm1_code,
-                                   optd_coord_lat, optd_coord_lon)
-
-  #
-  with open (optd_por_ref_file, newline='') as csvfile:
-    file_reader = csv.DictReader (csvfile, delimiter='^')
-    for row in file_reader:
-      ref_por_code = row['iata_code']
-      ref_cty_code = row['cty_code']
-      ref_ctry_code = row['ctry_code']
-      ref_state_code = row['state_code']
-      ref_coord_lat = row['lat']
-      ref_coord_lon = row['lon']
-
-      # Check whether the reference POR is in the list of OPTD POR
-      if not ref_por_code in optd_por_dict:
-        # The OPTD POR cannot be found in the list of reference POR
-        reportStruct = {'por_code': ref_por_code, 'in_optd': 0, 'in_ref': 1}
+      # Check whether there should be a state for that country
+      is_adm1_specified = 1
+      if (adm1_code == ""): is_adm1_specified = 0
+      is_state_specified = 1
+      if (state_code == ""): is_state_specified = 0
+      if ctry_code in optd_states_dict and (geo_id != "0") and (not is_state_specified or not is_adm1_specified):
+        # The state (or administrative level 1) is not specified
+        reportStruct = {'por_code': por_code, 'geonames_id': geo_id,
+                        'country_code': ctry_code, 'adm1_code': adm1_code,
+                        'state_code': state_code}
         print (str(reportStruct))
 
-      else:
-        # From the reference data
-        optd_por_tuple = optd_por_dict[por_code]
 
   # DEBUG
   if verboseFlag:
-    print ("OPTD POR data full dictionary:\n" + str(optd_por_dict))
+    print ("OPTD states full dictionary:\n" + str(optd_states_dict))
