@@ -140,28 +140,24 @@ if __name__ == '__main__':
       airline_code = row['2char_code']
       env_id = row['env_id']
 
-      # Register or update a dictionary for that airline code
-      airline_por_list = dict([(pk ,1)])
-      if not airline_code in airline_dict:
-        airline_dict[airline_code] = airline_por_list
-
-      else:
+      # Register the details for that airline code
+      if airline_code in airline_dict:
         airline_por_list = airline_dict[airline_code]
 
-      # Register the airport hubs/bases
-      airline_por_list[pk] = 1
+        # Register the airport hubs/bases
+        airline_por_list[pk] = 1
 
-      base_list_str = row['bases']
-      base_list = base_list_str.split('=')
-      # print (airline_code + ": " + base_list_str + " (" + str(base_list) + ")")
+        base_list_str = row['bases']
+        base_list = base_list_str.split('=')
+        # print (airline_code + ": " + base_list_str + " (" + str(base_list) + ")")
 
-      # Check, if the airline is still active,
-      # whether the airport bases/hubs appear in the file of POR list
-      if base_list and env_id == '':
-        for base in base_list:
-          if base and not base in airline_por_list:
-            reportStruct = {'airline_code': airline_code, 'base': base}
-            print (str(reportStruct))
+        # Check, if the airline is still active,
+        # whether the airport bases/hubs appear in the file of POR list
+        if base_list and env_id == '':
+          for base in base_list:
+            if base and not base in airline_por_list:
+              reportStruct = {'airline_code': airline_code, 'base': base}
+              print (str(reportStruct))
 
   # DEBUG
   if verboseFlag:
