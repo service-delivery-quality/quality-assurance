@@ -114,9 +114,12 @@ if __name__ == '__main__':
   with open (optd_por_public_file, newline='') as csvfile:
     file_reader = csv.DictReader (csvfile, delimiter='^')
     for row in file_reader:
-        optd_por_code = row['iata_code']
-        optd_date_from = row['date_from'] if row['date_from'] != "" else "1900-01-01"
-        optd_date_until = row['date_until'] if row['date_until'] != "" else "2999-12-31"
+        optd_por_iata = row['iata_code']
+        optd_por_icao = row['icao_code']
+        optd_date_from = "1900-01-01"
+        if row['date_from'] != "": optd_date_from = row['date_from']
+        optd_date_until = "2999-12-31"
+        if row['date_until'] != "": optd_date_until = row['date_until']
         optd_geo_id = row['geoname_id']
         optd_env_id = row['envelope_id']
         optd_coord_lat = row['latitude']
@@ -127,17 +130,23 @@ if __name__ == '__main__':
         optd_loc_type = row['location_type']
         
         #
-        if not optd_por_code in optd_por_dict:
-            # Register the OPTD details for the POR
-            optd_por_dict[optd_por_code] = (optd_ctry_code, optd_geo_id,
-                                            optd_env_id, optd_loc_type,
-                                            optd_date_from, optd_date_until,
-                                            optd_page_rank, optd_adm1_code,
-                                            optd_coord_lat, optd_coord_lon)
+        if not optd_por_iata in optd_por_dict:
+          # Register the OPTD details for the POR
+          por_struct = (optd_ctry_code, optd_geo_id, optd_env_id, optd_loc_type,
+                        optd_por_icao, optd_date_from, optd_date_until,
+                        optd_page_rank, optd_adm1_code,
+                        optd_coord_lat, optd_coord_lon)
+
+          # ZZZ IATA code is used to reference the airports having no IATA code,
+          # but having an ICAO code
+          if optd_por_iata != 'ZZZ':
+            optd_por_dict[optd_por_iata] = por_struct
+          elif optd_por_icao != '':
+            optd_por_dict[optd_por_icao] = por_struct
 
         # The POR should be an airport (why not adding 'R', 'B', 'H' and 'P')
-        if 'A' in optd_loc_type:
-          airports[optd_por_code].append((optd_date_from, optd_date_until))
+        if 'A' in optd_loc_type and optd_por_iata != 'ZZZ':
+          airports[optd_por_iata].append((optd_date_from, optd_date_until))
         
   # Filter those with more than one entry and sort by start and end dates
   airports = {k: sorted(v) for k, v in airports.items() if len(v) > 1}
@@ -146,9 +155,9 @@ if __name__ == '__main__':
   airports = {k: v for k, v in airports.items() if check_overlap(v)}
 
   # Browse the POR with duplicated IATA codes
-  for optd_por_code, v in airports.items():
+  for optd_por_iata, v in airports.items():
       # Retrieve the full details from the OPTD POR dictionary
-      optd_por_tuple = optd_por_dict[optd_por_code]
+      optd_por_tuple = optd_por_dict[optd_por_iata]
       optd_ctry_code = optd_por_tuple[0]
       optd_geo_id = optd_por_tuple[1]
       optd_env_id = optd_por_tuple[2]
@@ -157,10 +166,10 @@ if __name__ == '__main__':
       optd_date_until = optd_por_tuple[5]
 
       # Report the record as a JSON structure
-      reportStruct = {'por_code': optd_por_code, 'geonames_id': optd_geo_id,
+      reportStruct = {'por_code': optd_por_iata, 'geonames_id': optd_geo_id,
                       'location_type': optd_loc_type, 'env_id': optd_env_id,
                       'date_from': optd_date_from, 'date_until': optd_date_until,
                       'country_code': optd_ctry_code}
       print (str(reportStruct))
-      # print optd_por_code, " and ".join(["%s to %s" % (s, e) for s, e in v])
+      # print optd_por_iata, " and ".join(["%s to %s" % (s, e) for s, e in v])
 
