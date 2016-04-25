@@ -139,6 +139,7 @@ if __name__ == '__main__':
       pk = row['pk']
       airline_code = row['2char_code']
       env_id = row['env_id']
+      airline_name = row['name']
 
       # Register the details for that airline code
       if airline_code in airline_dict:
@@ -156,7 +157,8 @@ if __name__ == '__main__':
         if base_list and env_id == '':
           for base in base_list:
             if base and not base in airline_por_list:
-              reportStruct = {'airline_code': airline_code, 'base': base}
+              reportStruct = {'airline_code': airline_code, 'base': base,
+                              'airline_name': airline_name}
               print (str(reportStruct))
 
   # DEBUG
