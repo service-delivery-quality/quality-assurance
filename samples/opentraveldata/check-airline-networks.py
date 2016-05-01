@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 
-import urllib.request, shutil, csv, datetime, getopt, sys, os
+import urllib.request, shutil, csv, datetime, re, getopt, sys, os
 import networkx as nx
 import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap
 
 # Index increment
 k_idx_inc = 100
@@ -106,6 +107,10 @@ if __name__ == '__main__':
   #
   verboseFlag = handle_opt()
 
+  # OPTD-maintained list of POR, master file
+  optd_por_bksf_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_best_known_so_far.csv?raw=true'
+  optd_por_bksf_file = 'to_be_checked/optd_por_best_known_so_far.csv'
+
   # Airline details
   optd_airline_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_airlines.csv?raw=true'
   optd_airline_file = 'to_be_checked/optd_airlines.csv'
@@ -115,13 +120,42 @@ if __name__ == '__main__':
   optd_airline_por_file = 'to_be_checked/optd_airline_por.csv'
 
   # If the files are not present, or are too old, download them
+  downloadFileIfNeeded (optd_por_bksf_url, optd_por_bksf_file, verboseFlag)
   downloadFileIfNeeded (optd_airline_url, optd_airline_file, verboseFlag)
   downloadFileIfNeeded (optd_airline_por_url, optd_airline_por_file, verboseFlag)
 
   # DEBUG
   if verboseFlag:
+    displayFileHead (optd_por_bksf_file)
     displayFileHead (optd_airline_file)
     displayFileHead (optd_airline_por_file)
+
+  #
+  basemap = Basemap(projection='robin',lon_0=0,resolution='l')
+  basemap.drawcountries(linewidth = 0.5)
+  basemap.fillcontinents(color='white',lake_color='white')
+  basemap.drawcoastlines(linewidth=0.5)
+
+  #
+  # pk^iata_code^latitude^longitude^city_code^date_from
+  optd_por_dict = dict()
+  primary_key_re = re.compile ("^([A-Z]{3})-([A-Z]{1,2})-([0-9]{1,15})$")
+  with open (optd_por_bksf_file, newline='') as csvfile:
+    file_reader = csv.DictReader (csvfile, delimiter='^')
+    for row in file_reader:
+      optd_bksf_pk = row['pk']
+      match = primary_key_re.match (optd_bksf_pk)
+      optd_bksf_geo_id = match.group (3)
+      optd_bksf_iata_code = row['iata_code']
+      optd_bksf_city_code = row['city_code']
+      optd_bksf_coord_lat = row['latitude']
+      optd_bksf_coord_lon = row['longitude']
+      optd_bksf_date_from = row['date_from']
+
+      # Register the POR coordinates, if it is seen for the first time
+      if not optd_bksf_iata_code in optd_por_dict:
+        optd_por_dict[optd_bksf_iata_code] = basemap(optd_bksf_coord_lon, optd_bksf_coord_lat)
+
 
   #
   # airline_code^apt_org^apt_dst^flt_freq
@@ -170,8 +204,8 @@ if __name__ == '__main__':
 
   # DEBUG
   #nx.draw_graphviz (schedule_dict["FC"])
-  nx.draw_networkx (schedule_dict["FC"])
-  nx.draw_networkx (schedule_dict["KT"])
+  nx.draw_networkx (schedule_dict["FC"], optd_por_dict, node_color='blue')
+  nx.draw_networkx (schedule_dict["KT"], optd_por_dict, node_color='red')
   plt.show()
   
   #
@@ -207,8 +241,23 @@ if __name__ == '__main__':
   if verboseFlag:
     print ("Airline full dictionary:\n" + str(airline_dict))
 
-  graphs = list(nx.connected_component_subgraphs(schedule_dict["FC"]))
+
+  # http://stackoverflow.com/questions/19915266/drawing-a-graph-with-networkx-on-a-basemap
+# Networks on Maps: http://www.sociology-hacks.org/?p=67
+  # Creating a route planner for road network: http://ipython-books.github.io/featured-03/
+  
+  #
+  basemap = Basemap(projection='robin',lon_0=0,resolution='l')
+  basemap.drawcountries(linewidth = 0.5)
+  basemap.fillcontinents(color='white',lake_color='white')
+  basemap.drawcoastlines(linewidth=0.5)
+
+  # Decompose the airline network into independent sub-networks
+  graphs = list(nx.connected_component_subgraphs(schedule_dict["K5"]))
   for graph_comp in graphs:
-      nx.draw_networkx (graph_comp)
+      # Find the center of the sub-network
+      graph_comp_center = nx.center(graph_comp)
+      print ("Center: " + str(graph_comp_center))
+      nx.draw_networkx (graph_comp, optd_por_dict, node_color='green')
       plt.show()
 
