@@ -1,84 +1,14 @@
 #!/usr/bin/python3
 
-import urllib.request, shutil, csv, datetime, re, getopt, sys, os
+import csv, datetime, re
+import DeliveryQuality as dq
 
-# Usage
-def usage (script_name):
-  print ("")
-  print ("Usage: %s [options]" % script_name)
-  print ("")
-  print ("That script downloads OpenTravelData (OPTD) POR-related CSV files")
-  print ("and check that the OPTD POR are present in the reference data file")
-  print ("")
-  print ("Options:")
-  print ("  -h, --help      : outputs this help and exits")
-  print ("")
-
-# Handle command-line options
-def handle_opt():
-  try:
-    opts, args = getopt.getopt (sys.argv[1:], "hv", ["help", "verbose"])
-  except (getopt.GetoptError, err):
-    # Print help information and exit. It will print something like
-    # "option -a not recognized"
-    print (str (err))
-    usage()
-    sys.exit(2)
-
-  # Options
-  verboseFlag = False
-  for o, a in opts:
-    if o in ("-h", "--help"):
-      usage (sys.argv[0])
-      sys.exit()
-    elif o in ("-v", "--verbose"):
-      verboseFlag = True
-    else:
-      assert False, "Unhandled option"
-  return (verboseFlag)
-
-# Download a file from an URL
-def downloadFile (file_url, output_file, verbose_flag):
-  if verbose_flag:
-    print ("Downloading '" + output_file + "' from " + file_url + "...")
-  with urllib.request.urlopen (file_url) as response, open (output_file, 'wb') as out_file:
-    shutil.copyfileobj (response, out_file)
-  if verbose_flag:
-    print ("... done")
-  return
-
-# Donwload a file if needed
-def downloadFileIfNeeded (file_url, output_file, verbose_flag):
-  # Check whether the output_file has already been downloaded
-  try:
-    if os.stat (output_file).st_size > 0:
-      file_time = datetime.datetime.fromtimestamp (os.path.getmtime (output_file))
-      if verbose_flag:
-        print ("Time-stamp of '" + output_file + "': " + str(file_time))
-        print ("If that file is too old, you can delete it, and re-execute that script")
-    else:
-      downloadFile (file_url, output_file)
-  except OSError:
-    downloadFile (file_url, output_file)
-  return
-
-# Display the first 10 lines of a CSV file
-def displayFileHead (input_file):
-  #
-  print ("Header of the '" + input_file + "' file")
-  #
-  with open (input_file, newline='') as csvfile:
-    file_reader = csv.reader (csvfile, delimiter='^')
-    for i in range(10):
-      print (','.join(file_reader.__next__()))
-
-  #
-  return
 
 # Main
 if __name__ == '__main__':
   #
-  verboseFlag = handle_opt()
+  usageStr = "That script downloads OpenTravelData (OPTD) airline-related CSV files\nand check that the OPTD POR are present in the reference data file"
+  verboseFlag = dq.handle_opt(usageStr)
 
   # OPTD-maintained list of POR
   optd_por_public_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_public.csv?raw=true'
@@ -89,13 +19,13 @@ if __name__ == '__main__':
   optd_por_ref_file = 'to_be_checked/optd_por_ref.csv'
 
   # If the files are not present, or are too old, download them
-  downloadFileIfNeeded (optd_por_public_url, optd_por_public_file, verboseFlag)
-  downloadFileIfNeeded (optd_por_ref_url, optd_por_ref_file, verboseFlag)
+  dq.downloadFileIfNeeded (optd_por_public_url, optd_por_public_file, verboseFlag)
+  dq.downloadFileIfNeeded (optd_por_ref_url, optd_por_ref_file, verboseFlag)
 
   # DEBUG
   if verboseFlag:
-    displayFileHead (optd_por_public_file)
-    displayFileHead (optd_por_ref_file)
+    dq.displayFileHead (optd_por_public_file)
+    dq.displayFileHead (optd_por_ref_file)
 
   #
   ref_por_dict = dict()

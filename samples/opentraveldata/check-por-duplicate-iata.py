@@ -1,85 +1,14 @@
 #!/usr/bin/python3
 
+import csv, datetime
+import DeliveryQuality as dq
 from collections import defaultdict
 from itertools import tee
-import urllib.request, shutil, csv, datetime, re, getopt, sys, os
 
-# Usage
-def usage (script_name):
-  print ("")
-  print ("Usage: %s [options]" % script_name)
-  print ("")
-  print ("That script downloads OpenTravelData (OPTD) POR-related CSV files")
-  print ("and check whether there are OPTD POR with duplicated IATA codes")
-  print ("")
-  print ("Options:")
-  print ("  -h, --help      : outputs this help and exits")
-  print ("")
-
-# Handle command-line options
-def handle_opt():
-  try:
-    opts, args = getopt.getopt (sys.argv[1:], "hv", ["help", "verbose"])
-  except (getopt.GetoptError, err):
-    # Print help information and exit. It will print something like
-    # "option -a not recognized"
-    print (str (err))
-    usage()
-    sys.exit(2)
-
-  # Options
-  verboseFlag = False
-  for o, a in opts:
-    if o in ("-h", "--help"):
-      usage (sys.argv[0])
-      sys.exit()
-    elif o in ("-v", "--verbose"):
-      verboseFlag = True
-    else:
-      assert False, "Unhandled option"
-  return (verboseFlag)
-
-# Download a file from an URL
-def downloadFile (file_url, output_file, verbose_flag):
-  if verbose_flag:
-    print ("Downloading '" + output_file + "' from " + file_url + "...")
-  with urllib.request.urlopen (file_url) as response, open (output_file, 'wb') as out_file:
-    shutil.copyfileobj (response, out_file)
-  if verbose_flag:
-    print ("... done")
-  return
-
-# Donwload a file if needed
-def downloadFileIfNeeded (file_url, output_file, verbose_flag):
-  # Check whether the output_file has already been downloaded
-  try:
-    if os.stat (output_file).st_size > 0:
-      file_time = datetime.datetime.fromtimestamp (os.path.getmtime (output_file))
-      if verbose_flag:
-        print ("Time-stamp of '" + output_file + "': " + str(file_time))
-        print ("If that file is too old, you can delete it, and re-execute that script")
-    else:
-      downloadFile (file_url, output_file)
-  except OSError:
-    downloadFile (file_url, output_file)
-  return
-
-# Display the first 10 lines of a CSV file
-def displayFileHead (input_file):
-  #
-  print ("Header of the '" + input_file + "' file")
-  #
-  with open (input_file, newline='') as csvfile:
-    file_reader = csv.reader (csvfile, delimiter='^')
-    for i in range(10):
-      print (','.join(file_reader.__next__()))
-
-  #
-  return
 
 #
 def pairwise(iterable):
-    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    "s -> (s0, s1), (s1, s2), (s2, s3), ..."
     a, b = tee(iterable)
     next(b, None)
     return zip(a, b)
@@ -93,18 +22,19 @@ def check_overlap(l):
 # Main
 if __name__ == '__main__':
   #
-  verboseFlag = handle_opt()
+  usageStr = "That script downloads OpenTravelData (OPTD) POR-related CSV files\nand check whether there are OPTD POR with duplicated IATA codes"
+  verboseFlag = dq.handle_opt(usageStr)
 
   # OPTD-maintained list of POR
   optd_por_public_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_public.csv?raw=true'
   optd_por_public_file = 'to_be_checked/optd_por_public.csv'
 
   # If the files are not present, or are too old, download them
-  downloadFileIfNeeded (optd_por_public_url, optd_por_public_file, verboseFlag)
+  dq.downloadFileIfNeeded (optd_por_public_url, optd_por_public_file, verboseFlag)
 
   # DEBUG
   if verboseFlag:
-    displayFileHead (optd_por_public_file)
+    dq.displayFileHead (optd_por_public_file)
 
   #
   airports = defaultdict(list)
