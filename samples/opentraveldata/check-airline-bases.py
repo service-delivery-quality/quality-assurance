@@ -60,7 +60,7 @@ if __name__ == '__main__':
         airline_por_list[apt_dst] = cumulated_flt_freq + int(flt_freq)
 
   #
-  # pk^env_id^validity_from^validity_to^3char_code^2char_code^num_code^name^name2^alliance_code^alliance_status^type^wiki_link^flt_freq^alt_names^bases
+  # pk^env_id^validity_from^validity_to^3char_code^2char_code^num_code^name^name2^alliance_code^alliance_status^type^wiki_link^flt_freq^alt_names^bases^key^version
   #
   with open (optd_airline_file, newline='') as csvfile:
     file_reader = csv.DictReader (csvfile, delimiter='^')
