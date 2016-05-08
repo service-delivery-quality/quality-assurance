@@ -9,6 +9,7 @@ import DeliveryQuality as dq
 
 #
 k_airline_idx = 10000
+k_dist_ratio = 7.0
 
 # Main
 if __name__ == '__main__':
@@ -84,10 +85,25 @@ if __name__ == '__main__':
           schedule_dict[airline_code] = nx.Graph()
           last_airline_code = airline_code
 
+
+      # If the flight origin and destination are the same, report it.
+      # It is fine when the POR is a Seaplane Base (SPB), for instance
+      # DJH/Jebel Ali SPB (http://geonames.org/10943128).
+      # But sometimes it may be an issue in the schedule.
+      # Nevertheless, networkx.degree_centrality() would fail
+      # on such a loop edge; so, we do not add it to the network.
+      if apt_org == apt_dst:
+        reportStruct = {'reporting_reason': "The edge is a loop",
+                        'airline_code': airline_code, 'apt_org': apt_org,
+                        'apt_dst': apt_dst, 'flt_freq': flt_freq}
+        if verboseFlag:
+          print (str(reportStruct))
+
       # Register the flight leg as an edge into a NetworkX graph
       #idx_orig = getIdx(apt_org); idx_dest = getIdx(apt_dst)
       #schedule_dict[airline_code].add_edge (idx_orig-1, idx_dest-1, weight=flt_freq)
-      schedule_dict[airline_code].add_edge (apt_org, apt_dst, weight=flt_freq)
+      if apt_org != apt_dst:
+        schedule_dict[airline_code].add_edge (apt_org, apt_dst, weight=flt_freq)
       
       # Register or update a dictionary for that airline code
       airline_por_list = dict([(apt_org, flt_freq), (apt_dst, flt_freq)])
@@ -128,28 +144,10 @@ if __name__ == '__main__':
       airline_name = row['name']
       env_id = row['env_id']
 
-      # Register the details for that airline code
-      if airline_code in airline_sched_dict:
-        airline_por_list = airline_sched_dict[airline_code]
-
-        # Register the airport hubs/bases
-        airline_por_list[pk] = 1
-
-        base_list_str = row['bases']
-        base_list = base_list_str.split('=')
-        # print (airline_code + ": " + base_list_str + " (" + str(base_list) + ")")
-
-        # Check, if the airline is still active,
-        # whether the airport bases/hubs appear in the file of POR list
-        if base_list and env_id == '':
-          for base in base_list:
-            if base and not base in airline_por_list:
-              reportStruct = {'airline_code': airline_code, 'base': base}
-              print (str(reportStruct))
-
-      # Register the details for the airline
-      airline_dict[airline_code] = {'airline_code': airline_code,
-                                    'airline_name': airline_name}
+      # Register the details for the airline, when that latter is active
+      if env_id == "":
+        airline_dict[airline_code] = {'airline_code': airline_code,
+                                      'airline_name': airline_name}
 
 
   # DEBUG
@@ -166,7 +164,9 @@ if __name__ == '__main__':
   #for airline_code in ("K5", "U2", "9K", "LH"):
   for airline_code in airline_sched_dict:
       graph_comp_idx = 1
-      graphs = list(nx.connected_component_subgraphs(schedule_dict[airline_code]))
+      current_network = schedule_dict[airline_code]
+      graphs = list(nx.connected_component_subgraphs(current_network))
+
       for graph_comp in graphs:
           # Find the center of the sub-network
           graph_comp_center = nx.center(graph_comp)
@@ -190,15 +190,12 @@ if __name__ == '__main__':
           graph_centrality = nx.degree_centrality(graph_comp)
 
           # DEBUG
-          print ("[" + airline_code + "]: size=" + str(graph_size)
-                 + ", order=" + str(graph_order)
-                 + ", density=" + str(graph_density)
-                 + ", degree=" + str(graph_degree))
           if verboseFlag:
               print ("[" + airline_code + "]: size=" + str(graph_size)
                      + ", order=" + str(graph_order)
                      + ", density=" + str(graph_density)
-                     + ", degree=" + str(graph_degree))
+                     + ", degree=" + str(graph_degree)
+                     + ", graph_centrality=" + str(graph_centrality))
 
               labelStr = "Sub-network[" + str(graph_comp_idx) + "] for " + airline_code
               plt.figure(k_airline_idx + graph_comp_idx)
@@ -238,7 +235,9 @@ if __name__ == '__main__':
 
           # Reporting
           airline_name = airline_dict[airline_code]['airline_name']
-          reportStruct = {'airline_code': airline_code,
+          reasonStr = "The 'max_node' is far away (" + str(int(k_dist_ratio)) + "x the average distance) from the 'center'"
+          reportStruct = {'reporting_reason': reasonStr,
+                          'airline_code': airline_code,
                           'airline_name': airline_name,
                           'subnetwork_id': graph_comp_idx,
                           'center_list': graph_comp_center,
@@ -253,8 +252,7 @@ if __name__ == '__main__':
                           'avg_dist': avg_dist_to_center_km,
                           'ratio_dist': ratio_dist}
 
-          # DEBUG
-          if verboseFlag or ratio_dist >= 5.0:
+          if ratio_dist >= k_dist_ratio or verboseFlag:
               print (str(reportStruct))
 
           # Iteration on the sub-networks
@@ -265,4 +263,5 @@ if __name__ == '__main__':
 
       # For the current airline
       if verboseFlag:
-          plt.show()
+        a = 1
+        #plt.show()
