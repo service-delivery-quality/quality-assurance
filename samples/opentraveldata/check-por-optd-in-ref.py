@@ -14,20 +14,39 @@ if __name__ == '__main__':
   optd_por_public_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_public.csv?raw=true'
   optd_por_public_file = 'to_be_checked/optd_por_public.csv'
 
+  # OPTD-maintained list of (POR, city) pairing errors of reference data
+  optd_por_ref_err_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_ref_city_exceptions.csv?raw=true'
+  optd_por_ref_err_file = 'to_be_checked/optd_por_ref_city_exceptions.csv'
+
   # POR reference data
   optd_por_ref_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_ref.csv?raw=true'
   optd_por_ref_file = 'to_be_checked/optd_por_ref.csv'
 
   # If the files are not present, or are too old, download them
   dq.downloadFileIfNeeded (optd_por_public_url, optd_por_public_file, verboseFlag)
+  dq.downloadFileIfNeeded (optd_por_ref_err_url, optd_por_ref_err_file,
+                           verboseFlag)
   dq.downloadFileIfNeeded (optd_por_ref_url, optd_por_ref_file, verboseFlag)
 
   # DEBUG
   if verboseFlag:
     dq.displayFileHead (optd_por_public_file)
+    dq.displayFileHead (optd_por_ref_err_file)
     dq.displayFileHead (optd_por_ref_file)
 
-  #
+  # Known erros of reference data
+  ref_por_err_dict = dict()
+  with open (optd_por_ref_err_file, newline='') as csvfile:
+    file_reader = csv.DictReader (csvfile, delimiter='^')
+    for row in file_reader:
+      por_code = row['por_code']
+      cty_code = row['city_code']
+      #
+      if not por_code in ref_por_err_dict:
+        # Register the reference details for the POR
+        ref_por_err_dict[por_code] = {'city_code': cty_code}
+
+  # Reference data
   ref_por_dict = dict()
   with open (optd_por_ref_file, newline='') as csvfile:
     file_reader = csv.DictReader (csvfile, delimiter='^')
@@ -38,13 +57,22 @@ if __name__ == '__main__':
       state_code = row['state_code']
       coord_lat = row['lat']
       coord_lon = row['lon']
-      #
-      if not por_code in ref_por_dict:
-        # Register the reference details for the POR
-        ref_por_dict[por_code] = (por_code, cty_code, ctry_code, state_code,
-                                  coord_lat, coord_lon)
 
-  #
+      # Check whether the (POR, city) is a pair known to be an error
+      cty_err = False
+      if por_code in ref_por_err_dict:
+        if ref_por_err_dict[por_code]['city_code'] == cty_code:
+          cty_err = True
+
+      # Register the reference details for the POR
+      if not por_code in ref_por_dict:
+        ref_por_dict[por_code] = {'city_code': cty_code,
+                                  'country_code': ctry_code,
+                                  'state_code': state_code,
+                                  'geo_lat': coord_lat, 'geo_lon': coord_lon,
+                                  'city_error': cty_err}
+
+  # OPTD-maintained list of POR
   with open (optd_por_public_file, newline='') as csvfile:
     file_reader = csv.DictReader (csvfile, delimiter='^')
     for row in file_reader:
@@ -59,19 +87,29 @@ if __name__ == '__main__':
       optd_adm1_code = row['adm1_code']
       city_code_list_str = row['city_code_list']
 
-      # Check whether the OPTD POR is in the list of reference POR
-      if not optd_por_code in ref_por_dict and not optd_env_id:
+      # Check whether the POR is known to be missing from reference data
+      # (and that is an error)
+      por_missing_err = False
+      if optd_por_code in ref_por_err_dict:
+        if ref_por_err_dict[optd_por_code]['city_code'] == "":
+          por_missing_err = True
+
+      # Check whether the active OPTD POR is in the list of reference POR
+      if not optd_por_code in ref_por_dict and not optd_env_id and not por_missing_err:
         # The OPTD POR cannot be found in the list of reference POR
         reportStruct = {'por_code': optd_por_code, 'geonames_id': optd_geo_id,
                         'location_type': optd_loc_type,
+                        'page_rank': optd_page_rank,
                         'in_optd': 1, 'in_ref': 0}
         print (str(reportStruct))
 
       else:
-        if not optd_env_id:
+        # The active OPTD POR is in the list of reference POR
+        if not optd_env_id and not por_missing_err:
           # From the reference data
-          ref_por_tuple = ref_por_dict[optd_por_code]
-          ref_por_city_code = ref_por_tuple[1]
+          ref_por_record = ref_por_dict[optd_por_code]
+          ref_por_city_code = ref_por_record['city_code']
+          ref_por_err = ref_por_record['city_error']
 
           # From OPTD
           city_code_list = city_code_list_str.split(',')
@@ -87,10 +125,11 @@ if __name__ == '__main__':
             # Derive whether that POR is a city
             is_city = re.search ("C", optd_loc_type)
 
-            if not is_city and not ref_por_city_code in city_code_list:
+            if not is_city and not ref_por_city_code in city_code_list and not ref_por_err:
               reportStruct = {'por_code': optd_por_code,
                               'location_type': optd_loc_type,
                               'geonames_id': optd_geo_id,
+                              'page_rank': optd_page_rank,
                               'in_optd': 1, 'in_ref': 1,
                               'ref_por_code': ref_por_city_code,
                               'optd_city_code_list': city_code_list}
