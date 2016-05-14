@@ -44,7 +44,7 @@ if __name__ == '__main__':
       #
       if not por_code in ref_por_err_dict:
         # Register the reference details for the POR
-        ref_por_err_dict[por_code] = {'city_code': cty_code}
+        ref_por_err_dict[por_code] = {'city_code': cty_code, 'used': False}
 
   # Reference data
   ref_por_dict = dict()
@@ -65,7 +65,7 @@ if __name__ == '__main__':
           cty_err = True
 
           # Remove the record from the known errors, as it has been consumed
-          ref_por_err_dict.pop(por_code, None)
+          ref_por_err_dict[por_code]['used'] = True
 
       # Register the reference details for the POR
       if not por_code in ref_por_dict:
@@ -98,7 +98,7 @@ if __name__ == '__main__':
           por_missing_err = True
 
           # Remove the record from the known errors, as it has been consumed
-          ref_por_err_dict.pop(optd_por_code, None)
+          ref_por_err_dict[optd_por_code]['used'] = True
 
       # Check whether the active OPTD POR is in the list of reference POR
       if not optd_por_code in ref_por_dict and not optd_env_id and not por_missing_err:
@@ -142,9 +142,11 @@ if __name__ == '__main__':
               print (str(reportStruct))
 
   # Sanity check
-  if len (ref_por_err_dict) != 0:
-    print ("The file of known errors in reference data ('" + optd_por_ref_err_file + "') has not been fully consumed")
-    print ("The remaining entries are: " + str(ref_por_err_dict))
+  for por_code_err in ref_por_err_dict:
+    if not ref_por_err_dict[por_code_err]['used']:
+      reportStruct = {'por_code': por_code_err,
+                      'city_code': ref_por_err_dict[por_code_err]['city_code']}
+      print ("!!!!! Remaining entry of the file of known errors in reference data: " + str(reportStruct) + ". Please, remove that from the '" + optd_por_ref_err_url + "' file.")
 
   # DEBUG
   if verboseFlag:
