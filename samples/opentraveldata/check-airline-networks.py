@@ -216,6 +216,20 @@ if __name__ == '__main__':
               # Distance of the current node to the center of the sub-network
               dist_to_center = nx.shortest_path_length (graph_comp,
                                                         center_node, idx_node)
+
+              # Check whether the current node is referenced by OPTD
+              if not idx_node in optd_por_map_dict:
+                airline_name = airline_dict[airline_code]['airline_name']
+                reasonStr = "The current node (" + idx_node + ") is not referenced by the OpenTravelData project"
+                reportStruct = {'reporting_reason': reasonStr,
+                                'airline_code': airline_code,
+                                'airline_name': airline_name,
+                                'center': center_node,
+                                'node': idx_node}
+                print (str(reportStruct))
+                break
+              
+              #
               dist_to_center_km = dq.geocalc (center_node, idx_node,
                                               optd_por_coord_dict)
           
