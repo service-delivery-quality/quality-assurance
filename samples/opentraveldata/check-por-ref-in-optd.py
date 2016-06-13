@@ -16,15 +16,19 @@ if __name__ == '__main__':
   # POR reference data
   optd_por_ref_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_ref.csv?raw=true'
   optd_por_ref_file = 'to_be_checked/optd_por_ref.csv'
+  optd_por_ref_exc_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_ref_exceptions.csv?raw=true'
+  optd_por_ref_exc_file = 'to_be_checked/optd_por_ref_exceptions.csv'
 
   # If the files are not present, or are too old, download them
   dq.downloadFileIfNeeded (optd_por_public_url, optd_por_public_file, verboseFlag)
   dq.downloadFileIfNeeded (optd_por_ref_url, optd_por_ref_file, verboseFlag)
+  dq.downloadFileIfNeeded (optd_por_ref_exc_url, optd_por_ref_exc_file, verboseFlag)
 
   # DEBUG
   if verboseFlag:
     dq.displayFileHead (optd_por_public_file)
     dq.displayFileHead (optd_por_ref_file)
+    dq.displayFileHead (optd_por_ref_exc_file)
 
   #
   optd_por_dict = dict()
@@ -49,6 +53,20 @@ if __name__ == '__main__':
                                    optd_coord_lat, optd_coord_lon)
 
   #
+  ref_por_exc_dict = dict()
+  with open (optd_por_ref_exc_file, newline='') as csvfile:
+    file_reader = csv.DictReader (csvfile, delimiter='^')
+    for row in file_reader:
+      ref_por_exc_code = row['por_code']
+      ref_por_exc_src = row['source']
+      ref_por_exc_env_id = row['env_id']
+
+      #
+      if not ref_por_exc_code in ref_por_exc_dict and 'R' in ref_por_exc_src and ref_por_exc_env_id == '':
+        # Register the execption rule for the POR
+        ref_por_exc_dict[ref_por_exc_code] = (ref_por_exc_code)
+
+  #
   with open (optd_por_ref_file, newline='') as csvfile:
     file_reader = csv.DictReader (csvfile, delimiter='^')
     for row in file_reader:
@@ -60,7 +78,7 @@ if __name__ == '__main__':
       ref_coord_lon = row['lon']
 
       # Check whether the reference POR is in the list of OPTD POR
-      if not ref_por_code in optd_por_dict:
+      if not ref_por_code in optd_por_dict and not ref_por_code in ref_por_exc_dict:
         # The OPTD POR cannot be found in the list of reference POR
         reportStruct = {'por_code': ref_por_code, 'in_optd': 0, 'in_ref': 1}
         print (str(reportStruct))
