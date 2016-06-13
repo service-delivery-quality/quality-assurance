@@ -10,8 +10,8 @@ if __name__ == '__main__':
   verboseFlag = dq.handle_opt(usageStr)
 
   # OPTD-maintained list of POR
-  optd_por_public_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_public.csv?raw=true'
-  optd_por_public_file = 'to_be_checked/optd_por_public.csv'
+  optd_por_public_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_best_known_so_far.csv?raw=true'
+  optd_por_public_file = 'to_be_checked/optd_por_best_known_so_far.csv'
 
   # POR reference data
   optd_por_ref_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_ref.csv?raw=true'
@@ -32,21 +32,20 @@ if __name__ == '__main__':
     file_reader = csv.DictReader (csvfile, delimiter='^')
     for row in file_reader:
       por_code = row['iata_code']
-      optd_loc_type = row['location_type']
-      optd_geo_id = row['geoname_id']
-      optd_env_id = row['envelope_id']
+      #optd_loc_type = row['location_type']
+      #optd_geo_id = row['geoname_id']
+      #optd_env_id = row['envelope_id']
       optd_coord_lat = row['latitude']
       optd_coord_lon = row['longitude']
-      optd_page_rank = row['page_rank']
-      optd_ctry_code = row['country_code']
-      optd_adm1_code = row['adm1_code']
-      city_code_list_str = row['city_code_list']
+      #optd_page_rank = row['page_rank']
+      #optd_ctry_code = row['country_code']
+      #optd_adm1_code = row['adm1_code']
+      city_code_list_str = row['city_code']
 
       #
       if not por_code in optd_por_dict:
         # Register the OPTD details for the POR
-        optd_por_dict[por_code] = (por_code, city_code_list_str, optd_ctry_code,
-                                   optd_page_rank, optd_adm1_code,
+        optd_por_dict[por_code] = (por_code, city_code_list_str,
                                    optd_coord_lat, optd_coord_lon)
 
   #
