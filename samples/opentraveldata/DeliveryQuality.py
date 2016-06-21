@@ -45,7 +45,7 @@ def handle_opt (usage_doc):
       assert False, "Unhandled option"
   return (verboseFlag)
 
-def downloadFile (file_url, output_file, verbose_flag):
+def downloadFile (file_url, output_file, verbose_flag = False):
   """Download a file from the Web."""
   if verbose_flag:
     print ("Downloading '" + output_file + "' from " + file_url + "...")
@@ -55,7 +55,7 @@ def downloadFile (file_url, output_file, verbose_flag):
     print ("... done")
   return
 
-def downloadFileIfNeeded (file_url, output_file, verbose_flag):
+def downloadFileIfNeeded (file_url, output_file, verbose_flag = False):
   """Download a file from the Web, only if newer on that latter."""
   # Check whether the output_file has already been downloaded
   try:
@@ -65,9 +65,9 @@ def downloadFileIfNeeded (file_url, output_file, verbose_flag):
         print ("Time-stamp of '" + output_file + "': " + str(file_time))
         print ("If that file is too old, you can delete it, and re-execute that script")
     else:
-      downloadFile (file_url, output_file)
+      downloadFile (file_url, output_file, verbose_flag)
   except OSError:
-    downloadFile (file_url, output_file)
+    downloadFile (file_url, output_file, verbose_flag)
   return
 
 def displayFileHead (input_file):
