@@ -46,7 +46,7 @@ if __name__ == '__main__':
       actv_in_src = row['actv_in_src']
 
       #
-      if not por_code in por_exc_dict and env_id == "" and "I" in exc_src and actv_in_src == "1" and actv_in_optd == "0":
+      if not por_code in por_exc_dict and env_id == "" and "I" in exc_src:
         # Register the error details for the POR
         por_exc_dict[por_code] = {'city_code': cty_code, 'source': exc_src,
                                   'actv_in_optd': actv_in_optd,
@@ -118,7 +118,7 @@ if __name__ == '__main__':
       # for the reference ("I") source
       it_por_err = False
       if it_por_code in por_exc_dict:
-        if "I" in por_exc_dict[it_por_code]['source'] and por_exc_dict[it_por_code]['actv_in_src'] == "1":
+        if "I" in por_exc_dict[it_por_code]['source'] and por_exc_dict[it_por_code]['actv_in_optd'] == "0" and por_exc_dict[it_por_code]['actv_in_src'] == "1":
           it_por_err = True
 
           # Remove the record from the known errors, as it has been consumed
@@ -187,7 +187,10 @@ if __name__ == '__main__':
     optd_por_details = optd_por_dict[optd_por_code]
     optd_env_id = optd_por_details['env_id']
 
-    if not optd_por_code in it_por_dict and optd_env_id == "":
+    # Check whether there is an exception rule
+    optd_por_exc_in_optd_but_not_it = optd_por_code in por_exc_dict and "I" in por_exc_dict[optd_por_code]['source'] and por_exc_dict[optd_por_code]['actv_in_optd'] == "1" and por_exc_dict[optd_por_code]['actv_in_src'] == "0"
+
+    if not optd_por_code in it_por_dict and optd_env_id == "" and not optd_por_exc_in_optd_but_not_it:
       # Retrieve the details from OPTD
       optd_state_code = optd_por_details['state_code']
       optd_ctry_code = optd_por_details['ctry_code']
