@@ -100,6 +100,7 @@ if __name__ == '__main__':
                                    'cty_list': city_code_list_str}
 
   # IATA derived list of POR
+  it_por_dict = dict()
   with open (optd_por_it_file, newline='') as csvfile:
     file_reader = csv.DictReader (csvfile, delimiter='^')
     for row in file_reader:
@@ -132,6 +133,13 @@ if __name__ == '__main__':
         print (str(reportStruct))
 
       elif not it_por_err:
+        # First, register the IATA derived POR, so that we can then,
+        # in the next main loop, search for OPTD POR not referenced by IATA
+        it_por_dict[it_por_code] = {'loc_type': it_loc_type,
+                                    'state_code': it_state_code,
+                                    'country_code': it_ctry_code,
+                                    'city_code': it_cty_code}
+
         # The OPTD POR is in the list of IATA derived POR,
         # and it is not a known exception: retrieve the details from OPTD
         optd_por_details = optd_por_dict[it_por_code]
@@ -174,6 +182,34 @@ if __name__ == '__main__':
         # The exception rule has been consumed; register it
         por_exc_dict[it_por_code]['used'] = True
 
+  # Search for OPTD POR not, or no longer, referenced by IATA
+  for optd_por_code in optd_por_dict:
+    optd_por_details = optd_por_dict[optd_por_code]
+    optd_env_id = optd_por_details['env_id']
+
+    if not optd_por_code in it_por_dict and optd_env_id == "":
+      # Retrieve the details from OPTD
+      optd_state_code = optd_por_details['state_code']
+      optd_ctry_code = optd_por_details['ctry_code']
+      optd_cty_list_str = optd_por_details['cty_list']
+      optd_loc_type = optd_por_details['loc_type']
+      optd_geo_id = optd_por_details['geo_id']
+      optd_feat_class = optd_por_details['feat_class']
+      optd_feat_code = optd_por_details['feat_code']
+      optd_page_rank = optd_por_details['page_rank']
+
+      reasonStr = "OPTD POR not/no longer referenced by IATA"
+      reportStruct = {'por_code': optd_por_code, 'in_optd': 1, 'in_iata': 0,
+                      'optd_geo_id': optd_geo_id,
+                      'optd_state_code': optd_state_code,
+                      'optd_ctry_code': optd_ctry_code,
+                      'optd_cty_list': optd_cty_list_str,
+                      'optd_loc_type': optd_loc_type,
+                      'optd_feat_class': optd_feat_class,
+                      'optd_feat_code': optd_feat_code,
+                      'optd_page_rank': optd_page_rank}
+      print (str(reportStruct))
+  
   # Sanity check
   for por_code_exc in por_exc_dict:
     if not por_exc_dict[por_code_exc]['used'] and por_exc_dict[por_code_exc]['actv_in_src'] == "1":
