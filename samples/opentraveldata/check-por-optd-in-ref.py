@@ -16,8 +16,8 @@ if __name__ == '__main__':
 
   # OPTD-maintained list of (POR, city) pairing errors of data
   # for different sources (eg, reference, IATA, OAG, Innovata)
-  optd_por_ref_err_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_city_exceptions.csv?raw=true'
-  optd_por_ref_err_file = 'to_be_checked/optd_por_city_exceptions.csv'
+  optd_por_ref_err_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_exceptions.csv?raw=true'
+  optd_por_ref_err_file = 'to_be_checked/optd_por_exceptions.csv'
 
   # POR reference data
   optd_por_ref_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_ref.csv?raw=true'
@@ -44,12 +44,13 @@ if __name__ == '__main__':
       cty_code = row['city_code']
       err_src = row['source']
       env_id = row['env_id']
+      actv_in_optd = row['actv_in_optd']
 
       #
       if not por_code in por_err_dict and env_id == "":
         # Register the error details for the POR
         por_err_dict[por_code] = {'city_code': cty_code, 'source': err_src,
-                                  'used': False}
+                                  'actv_in_optd': actv_in_optd, 'used': False}
 
   # Reference data
   ref_por_dict = dict()
@@ -67,7 +68,7 @@ if __name__ == '__main__':
       # for the reference ("R") source
       cty_err = False
       if por_code in por_err_dict:
-        if por_err_dict[por_code]['city_code'] == cty_code and "R" in por_err_dict[por_code]['source']:
+        if por_err_dict[por_code]['city_code'] == cty_code and "R" in por_err_dict[por_code]['source'] and por_err_dict[por_code]['actv_in_optd'] == "1":
           cty_err = True
 
           # Remove the record from the known errors, as it has been consumed
@@ -100,7 +101,7 @@ if __name__ == '__main__':
       # from reference ("R") data (and that is an error)
       por_missing_err = False
       if optd_por_code in por_err_dict:
-        if por_err_dict[optd_por_code]['city_code'] == "" and "R" in por_err_dict[optd_por_code]['source']:
+        if por_err_dict[optd_por_code]['city_code'] == "" and "R" in por_err_dict[optd_por_code]['source'] and por_err_dict[optd_por_code]['actv_in_optd'] == "1":
           por_missing_err = True
 
           # Remove the record from the known errors, as it has been consumed
@@ -149,7 +150,7 @@ if __name__ == '__main__':
 
   # Sanity check
   for por_code_err in por_err_dict:
-    if not por_err_dict[por_code_err]['used']:
+    if not por_err_dict[por_code_err]['used'] and por_err_dict[por_code_err]['actv_in_optd'] == "1":
       reportStruct = {'por_code': por_code_err,
                       'city_code': por_err_dict[por_code_err]['city_code']}
       print ("!!!!! Remaining entry of the file of known errors in reference data: " + str(reportStruct) + ". Please, remove that from the '" + optd_por_ref_err_url + "' file.")

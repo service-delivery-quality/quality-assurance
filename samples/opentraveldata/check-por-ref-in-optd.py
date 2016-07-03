@@ -16,8 +16,8 @@ if __name__ == '__main__':
   # POR reference data
   optd_por_ref_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_ref.csv?raw=true'
   optd_por_ref_file = 'to_be_checked/optd_por_ref.csv'
-  optd_por_ref_exc_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_ref_exceptions.csv?raw=true'
-  optd_por_ref_exc_file = 'to_be_checked/optd_por_ref_exceptions.csv'
+  optd_por_ref_exc_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_exceptions.csv?raw=true'
+  optd_por_ref_exc_file = 'to_be_checked/optd_por_exceptions.csv'
 
   # If the files are not present, or are too old, download them
   dq.downloadFileIfNeeded (optd_por_public_url, optd_por_public_file, verboseFlag)
@@ -60,9 +60,10 @@ if __name__ == '__main__':
       ref_por_exc_code = row['por_code']
       ref_por_exc_src = row['source']
       ref_por_exc_env_id = row['env_id']
+      ref_por_exc_actv_in_optd = row['actv_in_optd']
 
       #
-      if not ref_por_exc_code in ref_por_exc_dict and 'R' in ref_por_exc_src and ref_por_exc_env_id == '':
+      if not ref_por_exc_code in ref_por_exc_dict and 'R' in ref_por_exc_src and ref_por_exc_env_id == '' and ref_por_exc_actv_in_optd == '0':
         # Register the execption rule for the POR
         ref_por_exc_dict[ref_por_exc_code] = (ref_por_exc_code)
 
