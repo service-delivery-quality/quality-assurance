@@ -125,7 +125,7 @@ if __name__ == '__main__':
           por_exc_dict[it_por_code]['used'] = True
 
       # Check whether the IATA derived POR is in the list of OPTD POR
-      if not it_por_code in optd_por_dict and not it_por_err:
+      if not it_por_code in optd_por_dict and not it_cty_code in optd_por_dict and not it_por_err:
         # The OPTD POR cannot be found in the list of IATA derived POR,
         # and it is not a known exception
         reasonStr = "IATA derived POR not in OpenTravelData"
@@ -133,12 +133,21 @@ if __name__ == '__main__':
         print (str(reportStruct))
 
       elif not it_por_err:
-        # First, register the IATA derived POR, so that we can then,
-        # in the next main loop, search for OPTD POR not referenced by IATA
-        it_por_dict[it_por_code] = {'loc_type': it_loc_type,
-                                    'state_code': it_state_code,
-                                    'country_code': it_ctry_code,
-                                    'city_code': it_cty_code}
+        if it_por_code in optd_por_dict:
+          # First, register the IATA derived POR, so that we can then,
+          # in the next main loop, search for OPTD POR not referenced by IATA
+          it_por_dict[it_por_code] = {'loc_type': it_loc_type,
+                                      'state_code': it_state_code,
+                                      'country_code': it_ctry_code,
+                                      'city_code': it_cty_code}
+        if it_cty_code in optd_por_dict:
+          # If the city code is different from the travel related code,
+          # and that city code is still not known from OPTD, register it
+          it_por_dict[it_cty_code] = {'loc_type': "C",
+                                      'state_code': it_state_code,
+                                      'country_code': it_ctry_code,
+                                      'city_code': it_cty_code}
+          
 
         # The OPTD POR is in the list of IATA derived POR,
         # and it is not a known exception: retrieve the details from OPTD
