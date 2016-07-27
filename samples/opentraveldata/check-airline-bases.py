@@ -33,7 +33,10 @@ if __name__ == '__main__':
     dq.displayFileHead (optd_por_public_file)
 
   #
+  # Screen-scraped flight schedules
   # airline_code^apt_org^apt_dst^flt_freq
+  #
+  # Build, for every airline, the list of POR they serve
   #
   airline_por_dict = dict()
   with open (optd_airline_por_file, newline='') as csvfile:
@@ -44,7 +47,7 @@ if __name__ == '__main__':
       apt_dst = row['apt_dst']
       flt_freq = row['flt_freq']
 
-      # Register or update a dictionary for that airline code
+      # Register or update the dictionary for that airline code
       if airline_code in airline_por_dict:
         airline_por_list = airline_por_dict[airline_code]
 
@@ -71,7 +74,9 @@ if __name__ == '__main__':
 
 
   #
+  # OpenTravelData-maintained list of POR
   # iata_code^icao_code^faa_code^is_geonames^geoname_id^envelope_id^name^asciiname^latitude^longitude^fclass^fcode^page_rank^date_from^date_until^comment^country_code^cc2^country_name^continent_name^adm1_code^adm1_name_utf^adm1_name_ascii^adm2_code^adm2_name_utf^adm2_name_ascii^adm3_code^adm4_code^population^elevation^gtopo30^timezone^gmt_offset^dst_offset^raw_offset^moddate^city_code_list^city_name_list^city_detail_list^tvl_por_list^state_code^location_type^wiki_link^alt_name_section^wac^wac_name
+  #
   optd_por_dict = dict()
   with open (optd_por_public_file, newline='') as csvfile:
     file_reader = csv.DictReader (csvfile, delimiter='^')
@@ -94,6 +99,7 @@ if __name__ == '__main__':
         optd_por_dict[optd_iata_code] = (optd_ctry_code, optd_cont_name)
 
   #
+  # OpenTravelData-maintained list of airlines
   # pk^env_id^validity_from^validity_to^3char_code^2char_code^num_code^name^name2^alliance_code^alliance_status^type^wiki_link^flt_freq^alt_names^bases^key^version
   #
   airline_dict = dict()
@@ -112,23 +118,27 @@ if __name__ == '__main__':
       if airline_code in airline_por_dict:
         airline_por_list = airline_por_dict[airline_code]
 
-        # Register the airline, if active and not already existing
+        # Register the airline, if active and not already registered
         if not airline_code in airline_dict and env_id == '':
           airline_dict[airline_code] = dict()
+          airline_dict[airline_code]['bases_in_sched'] = False
 
         # Register the airport hubs/bases (only for active airlines)
-        base_list = base_list_str.split('=')
-        # print (airline_code + ": " + base_list_str + " (" + str(base_list) + ")")
         if env_id == '':
+          base_list = base_list_str.split('=')
+          # print (airline_code + ": " + base_list_str + " (" + str(base_list) + ")")
           airline_dict[airline_code][icao_code] = {'bases': base_list,
                                                    'name': airline_name}
 
   # Browse the airlines
   # By construction, those are active airlines appearing in flight schedules
   for iata_code in airline_dict:
-    airline_por_list = airline_por_dict[airline_code]
+    airline_por_list = airline_por_dict[iata_code]
 
+    reportStruct = dict()
     for icao_code in airline_dict[iata_code]:
+      if icao_code == 'bases_in_sched':
+        continue
       por_details = airline_dict[iata_code][icao_code]
       base_list = por_details['bases']
       name = por_details['name']
@@ -136,10 +146,22 @@ if __name__ == '__main__':
       # Check whether the airport bases/hubs appear in the file of POR list
       if base_list:
         for base in base_list:
-          if base and not base in airline_por_list:
-            reportStruct = {'iata_code': iata_code, 'icao_code': icao_code,
-                            'base': base, 'airline_name': name}
-            print (str(reportStruct))
+
+          if base in airline_por_list:
+            # The base for an airline, having the current IATA code,
+            # appears in flight schedules
+            airline_dict[iata_code]['bases_in_sched'] = True
+
+          else:
+            # Register a few details to report later
+            if base and not icao_code in reportStruct:
+              reportStruct[icao_code] = {'base': base, 'airline_name': name}
+            
+    # If none of the airlines having that IATA code
+    # have bases appearing in flight schedules, report them
+    if airline_dict[iata_code]['bases_in_sched'] == False and len(reportStruct):
+      reportStruct['iata_code'] = iata_code
+      print (str(reportStruct))
 
     
   # DEBUG
