@@ -43,9 +43,13 @@ if __name__ == '__main__':
       date_to = row['validity_to']
 
       # Register or update the details for that airline code
-      if not airline_code in airline_dict:
+      if not airline_code in airline_dict and env_id == '':
         airline_dict[airline_code] = dict()
-      airline_dict[airline_code][pk] = {'details': {'airline_name': airline_name, 'version': version, 'validity_from': date_from, 'validity_to': date_to}}
+        airline_dict[airline_code][pk] = {'airline_name': airline_name,
+                                          'env_id': env_id,
+                                          'version': version,
+                                          'validity_from': date_from,
+                                          'validity_to': date_to}
 
   #
   # airline_code^apt_org^apt_dst^flt_freq

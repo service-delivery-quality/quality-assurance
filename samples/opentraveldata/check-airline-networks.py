@@ -247,6 +247,12 @@ if __name__ == '__main__':
           # Calculate the ratio (max distance / avg distance)
           ratio_dist = max_dist_to_center_km / avg_dist_to_center_km
 
+          # If the airline is not known from OpenTravelData, do not report it
+          # here, as it is specifically reported by the
+          # check-airline-sched-in-optd.py script
+          if not airline_code in airline_dict:
+            continue
+
           # Reporting
           airline_name = airline_dict[airline_code]['airline_name']
           reasonStr = "The 'max_node' is far away (" + str(int(k_dist_ratio)) + "x the average distance) from the 'center'"
