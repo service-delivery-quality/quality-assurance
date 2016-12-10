@@ -14,8 +14,8 @@ if __name__ == '__main__':
   optd_por_public_file = 'to_be_checked/optd_por_public.csv'
 
   # List of flight leg frequencies
-  optd_airline_por_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_airline_por.csv?raw=true'
-  optd_airline_por_file = 'to_be_checked/optd_airline_por.csv'
+  optd_airline_por_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_airline_por_rcld.csv?raw=true'
+  optd_airline_por_file = 'to_be_checked/optd_airline_por_rcld.csv'
 
   # If the files are not present, or are too old, download them
   dq.downloadFileIfNeeded (optd_por_public_url, optd_por_public_file, verboseFlag)
@@ -31,13 +31,18 @@ if __name__ == '__main__':
   with open (optd_por_public_file, newline='') as csvfile:
     file_reader = csv.DictReader (csvfile, delimiter='^')
     for row in file_reader:
-      por_code = row['iata_code']
+      optd_iata_code = row['iata_code']
+      optd_icao_code = row['icao_code']
       optd_loc_type = row['location_type']
       optd_geo_id = row['geoname_id']
       optd_env_id = row['envelope_id']
       optd_page_rank = row['page_rank']
       optd_ctry_code = row['country_code']
 
+      # Derive a unique code
+      por_code = optd_iata_code
+      if (por_code == "ZZZ"): por_code = optd_icao_code
+      
       #
       if not por_code in optd_por_dict:
         # Register the OPTD details for the POR
@@ -45,19 +50,21 @@ if __name__ == '__main__':
                                    optd_env_id, optd_page_rank, optd_ctry_code)
 
   #
-  sched_por_dict = dict()
+  # airline_code^apt_org^apt_dst^seats_mtly_avg^freq_mtly_avg
+  #
+  airline_sched_dict = dict()
   with open (optd_airline_por_file, newline='') as csvfile:
     file_reader = csv.DictReader (csvfile, delimiter='^')
     for row in file_reader:
       airline_code = row['airline_code']
       org_code = row['apt_org']
       dst_code = row['apt_dst']
-      flt_freq = row['flt_freq']
+      flt_freq = float(row['freq_mtly_avg'])
 
       # Check whether the origin POR is in the list of OPTD POR
-      if not org_code in optd_por_dict and not org_code in sched_por_dict:
+      if not org_code in optd_por_dict and not org_code in airline_sched_dict:
         # Register the new POR
-        sched_por_dict[org_code] = 1
+        airline_sched_dict[org_code] = 1
 
         # The origin POR cannot be found in the list of OPTD POR
         reportStruct = {'por_code': org_code, 'airline_code': airline_code,
@@ -65,9 +72,9 @@ if __name__ == '__main__':
         print (str(reportStruct))
 
       # Check whether the destination POR is in the list of OPTD POR
-      if not dst_code in optd_por_dict and not dst_code in sched_por_dict:
+      if not dst_code in optd_por_dict and not dst_code in airline_sched_dict:
         # Register the new POR
-        sched_por_dict[dst_code] = 1
+        airline_sched_dict[dst_code] = 1
 
         # The origin POR cannot be found in the list of OPTD POR
         reportStruct = {'por_code': dst_code, 'airline_code': airline_code,

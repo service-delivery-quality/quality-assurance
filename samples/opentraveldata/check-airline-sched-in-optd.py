@@ -14,8 +14,8 @@ if __name__ == '__main__':
   optd_airline_file = 'to_be_checked/optd_airlines.csv'
 
   # List of flight leg frequencies
-  optd_airline_por_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_airline_por.csv?raw=true'
-  optd_airline_por_file = 'to_be_checked/optd_airline_por.csv'
+  optd_airline_por_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_airline_por_rcld.csv?raw=true'
+  optd_airline_por_file = 'to_be_checked/optd_airline_por_rcld.csv'
 
   # If the files are not present, or are too old, download them
   dq.downloadFileIfNeeded (optd_airline_url, optd_airline_file, verboseFlag)
@@ -34,13 +34,19 @@ if __name__ == '__main__':
     file_reader = csv.DictReader (csvfile, delimiter='^')
     for row in file_reader:
       pk = row['pk']
-      airline_code = row['2char_code']
+      airline_2code = row['2char_code']
+      airline_3code = row['3char_code']
       airline_name = row['name']
       pk = row['pk']
       env_id = row['env_id']
       version = row['version']
       date_from = row['validity_from']
       date_to = row['validity_to']
+
+      # Take into account airlines having a ICAO code but no IATA code
+      airline_code = airline_2code
+      if (airline_code == ""):
+        airline_code = airline_3code
 
       # Register or update the details for that airline code
       if not airline_code in airline_dict and env_id == '':
@@ -52,20 +58,20 @@ if __name__ == '__main__':
                                           'validity_to': date_to}
 
   #
-  # airline_code^apt_org^apt_dst^flt_freq
+  # airline_code^apt_org^apt_dst^seats_mtly_avg^freq_mtly_avg
   #
-  airline_ady_rpt_dict = dict()
+  airline_sched_dict = dict()
   with open (optd_airline_por_file, newline='') as csvfile:
     file_reader = csv.DictReader (csvfile, delimiter='^')
     for row in file_reader:
       airline_code = row['airline_code']
       apt_org = row['apt_org']
       apt_dst = row['apt_dst']
-      flt_freq = row['flt_freq']
+      flt_freq = float(row['freq_mtly_avg'])
 
       #
-      if not airline_code in airline_dict and not airline_code in airline_ady_rpt_dict:
-        airline_ady_rpt_dict[airline_code] = True
+      if not airline_code in airline_dict and not airline_code in airline_sched_dict:
+        airline_sched_dict[airline_code] = True
         reportStr = {'airline_code': airline_code}
         print (str(reportStr))
 

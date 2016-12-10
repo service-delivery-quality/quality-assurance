@@ -17,17 +17,17 @@ if __name__ == '__main__':
   usageStr = "That script downloads OpenTravelData (OPTD) airline-related CSV files\nand check outliers within airline networks"
   verboseFlag = dq.handle_opt(usageStr)
 
-  # OPTD-maintained list of POR, master file
-  optd_por_bksf_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_best_known_so_far.csv?raw=true'
-  optd_por_bksf_file = 'to_be_checked/optd_por_best_known_so_far.csv'
+  # OPTD-maintained list of POR
+  optd_por_bksf_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_public.csv?raw=true'
+  optd_por_bksf_file = 'to_be_checked/optd_por_public.csv'
 
   # Airline details
   optd_airline_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_airlines.csv?raw=true'
   optd_airline_file = 'to_be_checked/optd_airlines.csv'
 
   # List of flight leg frequencies
-  optd_airline_por_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_airline_por.csv?raw=true'
-  optd_airline_por_file = 'to_be_checked/optd_airline_por.csv'
+  optd_airline_por_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_airline_por_rcld.csv?raw=true'
+  optd_airline_por_file = 'to_be_checked/optd_airline_por_rcld.csv'
 
   # If the files are not present, or are too old, download them
   dq.downloadFileIfNeeded (optd_por_bksf_url, optd_por_bksf_file, verboseFlag)
@@ -44,30 +44,38 @@ if __name__ == '__main__':
   basemap = Basemap(projection='robin',lon_0=0,resolution='l')
 
   #
-  # pk^iata_code^latitude^longitude^city_code^date_from
+  # iata_code^icao_code^geoname_id^envelope_id^latitude^longitude^date_from^city_code_list
   optd_por_map_dict = dict()
   optd_por_coord_dict = dict()
   primary_key_re = re.compile ("^([A-Z]{3})-([A-Z]{1,2})-([0-9]{1,15})$")
   with open (optd_por_bksf_file, newline='') as csvfile:
     file_reader = csv.DictReader (csvfile, delimiter='^')
     for row in file_reader:
-      optd_bksf_pk = row['pk']
-      match = primary_key_re.match (optd_bksf_pk)
-      optd_bksf_geo_id = match.group (3)
+      # Filter out the no longer valid POR
+      optd_bksf_env_id = row['envelope_id']
+      if (optd_bksf_env_id != ""): continue
+
+      # Retrieve the POR details
+      optd_bksf_geo_id = row['geoname_id']
       optd_bksf_iata_code = row['iata_code']
-      optd_bksf_city_code = row['city_code']
+      optd_bksf_icao_code = row['icao_code']
+      optd_bksf_city_code = row['city_code_list']
       optd_bksf_coord_lat = row['latitude']
       optd_bksf_coord_lon = row['longitude']
       optd_bksf_date_from = row['date_from']
 
+      # Derive a unique code
+      optd_bksf_code = optd_bksf_iata_code
+      if (optd_bksf_code == "ZZZ"): optd_bksf_code = optd_bksf_icao_code
+      
       # Register the POR coordinates, if it is seen for the first time
-      if not optd_bksf_iata_code in optd_por_map_dict:
-        optd_por_coord_dict[optd_bksf_iata_code] = (optd_bksf_coord_lat, optd_bksf_coord_lon)
-        optd_por_map_dict[optd_bksf_iata_code] = basemap(optd_bksf_coord_lon, optd_bksf_coord_lat)
+      if not optd_bksf_code in optd_por_map_dict:
+        optd_por_coord_dict[optd_bksf_code] = (optd_bksf_coord_lat, optd_bksf_coord_lon)
+        optd_por_map_dict[optd_bksf_code] = basemap(optd_bksf_coord_lon, optd_bksf_coord_lat)
 
 
   #
-  # airline_code^apt_org^apt_dst^flt_freq
+  # airline_code^apt_org^apt_dst^seats_mtly_avg^freq_mtly_avg
   #
   airline_sched_dict = dict()
   schedule_dict = dict()
@@ -78,7 +86,7 @@ if __name__ == '__main__':
       airline_code = row['airline_code']
       apt_org = row['apt_org']
       apt_dst = row['apt_dst']
-      flt_freq = row['flt_freq']
+      flt_freq = float(row['freq_mtly_avg'])
 
       # If the airline code is new, create a (NetworkX graph)
       if airline_code != last_airline_code:
@@ -115,16 +123,16 @@ if __name__ == '__main__':
 
       # Register the flight frequency for the origin airport
       if not apt_org in airline_por_list:
-        airline_por_list[apt_org] = int(flt_freq)
+        airline_por_list[apt_org] = flt_freq
       else:
-        cumulated_flt_freq = int(airline_por_list[apt_org])
-        airline_por_list[apt_org] = cumulated_flt_freq + int(flt_freq)
+        cumulated_flt_freq = airline_por_list[apt_org]
+        airline_por_list[apt_org] = cumulated_flt_freq + flt_freq
       # Register the flight frequency for the destination airport
       if not apt_dst in airline_por_list:
-        airline_por_list[apt_dst] = int(flt_freq)
+        airline_por_list[apt_dst] = flt_freq
       else:
-        cumulated_flt_freq = int(airline_por_list[apt_dst])
-        airline_por_list[apt_dst] = cumulated_flt_freq + int(flt_freq)
+        cumulated_flt_freq = airline_por_list[apt_dst]
+        airline_por_list[apt_dst] = cumulated_flt_freq + flt_freq
 
   # DEBUG
   #nx.draw_graphviz (schedule_dict["FC"])
@@ -209,10 +217,10 @@ if __name__ == '__main__':
 
           #
           center_node = graph_comp_center[0]
-          max_dist_to_center_km = 0
+          max_dist_to_center_km = 0.0
           max_dist_node = center_node
-          sum_dist_km = 0
-          for idx_node in graph_comp:
+          sum_dist_km = 0.0
+          for idx_node in (x for x in graph_comp if x!= center_node):
               # Distance of the current node to the center of the sub-network
               dist_to_center = nx.shortest_path_length (graph_comp,
                                                         center_node, idx_node)
@@ -229,10 +237,12 @@ if __name__ == '__main__':
                 print (str(reportStruct))
                 break
               
-              #
+              # Calculate the geographical distance between the current POR
+              # and the network center
               dist_to_center_km = dq.geocalc (center_node, idx_node,
                                               optd_por_coord_dict)
-          
+
+              #
               sum_dist_km += dist_to_center_km
 
               #
@@ -242,7 +252,10 @@ if __name__ == '__main__':
 
 
           # Calculate the geographical distance statistics (average and max)
-          avg_dist_to_center_km = sum_dist_km / graph_comp.order()
+          # The number of nodes on which the average is calculated is:
+          #  * The number of nodes of the network
+          #  * Minus the center node
+          avg_dist_to_center_km = sum_dist_km / (graph_order-1)
 
           # Calculate the ratio (max distance / avg distance)
           ratio_dist = max_dist_to_center_km / avg_dist_to_center_km

@@ -14,8 +14,8 @@ if __name__ == '__main__':
   optd_airline_file = 'to_be_checked/optd_airlines.csv'
 
   # List of flight leg frequencies
-  optd_airline_por_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_airline_por.csv?raw=true'
-  optd_airline_por_file = 'to_be_checked/optd_airline_por.csv'
+  optd_airline_por_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_airline_por_rcld.csv?raw=true'
+  optd_airline_por_file = 'to_be_checked/optd_airline_por_rcld.csv'
 
   # OPTD-maintained list of POR, generated file
   optd_por_public_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_public.csv?raw=true'
@@ -45,7 +45,7 @@ if __name__ == '__main__':
       airline_code = row['airline_code']
       apt_org = row['apt_org']
       apt_dst = row['apt_dst']
-      flt_freq = row['flt_freq']
+      flt_freq = float(row['freq_mtly_avg'])
 
       # Register or update the dictionary for that airline code
       if airline_code in airline_por_dict:
@@ -53,23 +53,23 @@ if __name__ == '__main__':
 
         # Register the flight frequency for the origin airport
         if not apt_org in airline_por_list:
-          airline_por_list[apt_org] = int(flt_freq)
+          airline_por_list[apt_org] = flt_freq
         else:
-          cumulated_flt_freq = int(airline_por_list[apt_org])
-          airline_por_list[apt_org] = cumulated_flt_freq + int(flt_freq)
+          cumulated_flt_freq = airline_por_list[apt_org]
+          airline_por_list[apt_org] = cumulated_flt_freq + flt_freq
 
         # Register the flight frequency for the destination airport
         if not apt_dst in airline_por_list:
-          airline_por_list[apt_dst] = int(flt_freq)
+          airline_por_list[apt_dst] = flt_freq
         else:
           cumulated_flt_freq = int(airline_por_list[apt_dst])
-          airline_por_list[apt_dst] = cumulated_flt_freq + int(flt_freq)
+          airline_por_list[apt_dst] = cumulated_flt_freq + flt_freq
 
       else:
         # Register the flight frequencies for the origin and destination airports
         airline_por_list = dict()
-        airline_por_list[apt_org] = int(flt_freq)
-        airline_por_list[apt_dst] = int(flt_freq)
+        airline_por_list[apt_org] = flt_freq
+        airline_por_list[apt_dst] = flt_freq
         airline_por_dict[airline_code] = airline_por_list
 
 
