@@ -18,8 +18,8 @@ if __name__ == '__main__':
   verboseFlag = dq.handle_opt(usageStr)
 
   # OPTD-maintained list of POR
-  optd_por_bksf_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_public.csv?raw=true'
-  optd_por_bksf_file = 'to_be_checked/optd_por_public.csv'
+  optd_por_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_por_public.csv?raw=true'
+  optd_por_file = 'to_be_checked/optd_por_public.csv'
 
   # Airline details
   optd_airline_url = 'https://github.com/opentraveldata/opentraveldata/blob/master/opentraveldata/optd_airlines.csv?raw=true'
@@ -30,13 +30,13 @@ if __name__ == '__main__':
   optd_airline_por_file = 'to_be_checked/optd_airline_por_rcld.csv'
 
   # If the files are not present, or are too old, download them
-  dq.downloadFileIfNeeded (optd_por_bksf_url, optd_por_bksf_file, verboseFlag)
+  dq.downloadFileIfNeeded (optd_por_url, optd_por_file, verboseFlag)
   dq.downloadFileIfNeeded (optd_airline_url, optd_airline_file, verboseFlag)
   dq.downloadFileIfNeeded (optd_airline_por_url, optd_airline_por_file, verboseFlag)
 
   # DEBUG
   if verboseFlag:
-    dq.displayFileHead (optd_por_bksf_file)
+    dq.displayFileHead (optd_por_file)
     dq.displayFileHead (optd_airline_file)
     dq.displayFileHead (optd_airline_por_file)
 
@@ -44,34 +44,36 @@ if __name__ == '__main__':
   basemap = Basemap(projection='robin',lon_0=0,resolution='l')
 
   #
+  # OpenTravelData file of the POR details (optd_por_public.csv)
+  #
   # iata_code^icao_code^geoname_id^envelope_id^latitude^longitude^date_from^city_code_list
   optd_por_map_dict = dict()
   optd_por_coord_dict = dict()
   primary_key_re = re.compile ("^([A-Z]{3})-([A-Z]{1,2})-([0-9]{1,15})$")
-  with open (optd_por_bksf_file, newline='') as csvfile:
+  with open (optd_por_file, newline='') as csvfile:
     file_reader = csv.DictReader (csvfile, delimiter='^')
     for row in file_reader:
       # Filter out the no longer valid POR
-      optd_bksf_env_id = row['envelope_id']
-      if (optd_bksf_env_id != ""): continue
+      optd_por_env_id = row['envelope_id']
+      if (optd_por_env_id != ""): continue
 
       # Retrieve the POR details
-      optd_bksf_geo_id = row['geoname_id']
-      optd_bksf_iata_code = row['iata_code']
-      optd_bksf_icao_code = row['icao_code']
-      optd_bksf_city_code = row['city_code_list']
-      optd_bksf_coord_lat = row['latitude']
-      optd_bksf_coord_lon = row['longitude']
-      optd_bksf_date_from = row['date_from']
+      optd_por_geo_id = row['geoname_id']
+      optd_por_iata_code = row['iata_code']
+      optd_por_icao_code = row['icao_code']
+      optd_por_city_code = row['city_code_list']
+      optd_por_coord_lat = row['latitude']
+      optd_por_coord_lon = row['longitude']
+      optd_por_date_from = row['date_from']
 
       # Derive a unique code
-      optd_bksf_code = optd_bksf_iata_code
-      if (optd_bksf_code == "ZZZ"): optd_bksf_code = optd_bksf_icao_code
+      optd_por_code = optd_por_iata_code
+      if (optd_por_code == "ZZZ"): optd_por_code = optd_por_icao_code
       
       # Register the POR coordinates, if it is seen for the first time
-      if not optd_bksf_code in optd_por_map_dict:
-        optd_por_coord_dict[optd_bksf_code] = (optd_bksf_coord_lat, optd_bksf_coord_lon)
-        optd_por_map_dict[optd_bksf_code] = basemap(optd_bksf_coord_lon, optd_bksf_coord_lat)
+      if not optd_por_code in optd_por_map_dict:
+        optd_por_coord_dict[optd_por_code] = (optd_por_coord_lat, optd_por_coord_lon)
+        optd_por_map_dict[optd_por_code] = basemap(optd_por_coord_lon, optd_por_coord_lat)
 
 
   #
