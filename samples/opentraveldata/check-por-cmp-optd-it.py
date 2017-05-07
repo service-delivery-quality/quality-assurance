@@ -251,6 +251,8 @@ if __name__ == '__main__':
           
           # First, check that there is no known exception
           is_state_exc = False
+
+          # In the optd_state_exceptions.csv
           full_state_code = dq.getFullStateCode (optd_ctry_code, optd_state_code)
           if full_state_code in state_exc_dict:
             state_exc_details = state_exc_dict[full_state_code]
@@ -260,6 +262,13 @@ if __name__ == '__main__':
               is_state_exc = True
               state_exc_dict[full_state_code]['used'] = True
 
+          # In the optd_por_exceptions.csv
+          optd_por_exc_state_diff = it_code in por_exc_dict and "I" in por_exc_dict[it_code]['source'] and por_exc_dict[it_code]['actv_in_optd'] == "1" and por_exc_dict[it_code]['actv_in_src'] == "1"
+          if optd_por_exc_state_diff:
+            is_state_exc = True
+            por_exc_dict[it_code]['used'] = True
+
+          #
           if not is_state_exc:
             # No known exception rule applies for that state
             reasonStr = "IATA- and OPTD-derived POR have not the same state codes"
