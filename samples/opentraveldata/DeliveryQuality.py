@@ -100,7 +100,7 @@ def geocalcbycoord(lat0, lon0, lat1, lon1):
     c = np.arctan2(y, x)
     return k_earth_radius * c
 
-def geocalc(node1, node2, coord_dict):
+def geocalc (node1, node2, coord_dict):
     """Return the geographical distance (in km) between
     two nodes of a NetworkX Graph."""
     lat0 = float(coord_dict[node1][0])
@@ -127,3 +127,9 @@ def getIataCode (idx):
     ic3 = idx - (ic1 * k_idx_inc**2 + ic2 * k_idx_inc)
     iata_code = chr(ic1 + k_ascii) + chr(ic2 + k_ascii) + chr(ic3 + k_ascii)
     return iata_code
+
+def getFullStateCode (country_code, state_code):
+    """Return the ISO 3166-2 full code, which is the composition of
+    the country code (ISO 3166-1) and the state code (ISO 3166-2)"""
+    full_state_code = country_code + "-" + state_code
+    return full_state_code
