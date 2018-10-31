@@ -1,0 +1,3 @@
+[submodule "samples/opentraveldata"]
+	path = samples/opentraveldata
+	url = git@github.com:opentraveldata/quality-assurance.git
