@@ -4,6 +4,8 @@
 That repository features tools to ease the creation, implementation and management
 of Quality Assurance (QA) dashboards.
 
+A reference dashboard is Geonames' one: http://qa.geonames.org/qa/
+
 The sample project is OpenTravelData (OPTD): http://github.com/opentraveldata/opentraveldata
 
 ## Samples - OpenTravelData
