@@ -11,6 +11,6 @@ of Quality Assurance (QA) dashboards.
 * [Geonames' QA dashboard](http://qa.geonames.org/qa/)
 
 ## OpenTravelData
-* [OpenTravelData (OPTD) QA dashboard](http://github.com/opentraveldata/opentraveldata-qa)
+* [OpenTravelData (OPTD) QA dashboard](http://github.com/opentraveldata/quality-assurance)
 
 
